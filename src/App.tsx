@@ -265,12 +265,14 @@ export default function App() {
       addedAtTimestamp: Date.now(),
     };
 
+    let updatedList: RedeemCode[] = [];
     setCodes((prev) => {
       const filtered = prev.filter((c) => c.code.toUpperCase() !== newCode.code.toUpperCase());
-      return sortCodesByNewest([newCode, ...filtered]);
+      updatedList = sortCodesByNewest([newCode, ...filtered]);
+      return updatedList;
     });
 
-    saveServerCode(newCode, currentUserEmail);
+    saveServerCode(newCode, currentUserEmail, updatedList);
 
     if (soundEnabled) {
       playAlertSound();
@@ -296,13 +298,15 @@ export default function App() {
       addedAtTimestamp: Date.now() + (newCodesData.length - idx),
     }));
 
+    let updatedList: RedeemCode[] = [];
     setCodes((prev) => {
       const incomingCodeSet = new Set(formatted.map((c) => c.code.toUpperCase()));
       const filtered = prev.filter((c) => !incomingCodeSet.has(c.code.toUpperCase()));
-      return sortCodesByNewest([...formatted, ...filtered]);
+      updatedList = sortCodesByNewest([...formatted, ...filtered]);
+      return updatedList;
     });
 
-    saveServerBatchCodes(formatted, currentUserEmail);
+    saveServerBatchCodes(formatted, currentUserEmail, updatedList);
 
     if (soundEnabled) {
       playAlertSound();
@@ -321,8 +325,12 @@ export default function App() {
       return;
     }
 
-    setCodes((prev) => prev.map((c) => (c.id === updatedCode.id ? updatedCode : c)));
-    updateServerCode(updatedCode, currentUserEmail);
+    let updatedList: RedeemCode[] = [];
+    setCodes((prev) => {
+      updatedList = prev.map((c) => (c.id === updatedCode.id ? updatedCode : c));
+      return updatedList;
+    });
+    updateServerCode(updatedCode, currentUserEmail, updatedList);
 
     setToastMessage(`✏️ แก้ไขโค้ด ${updatedCode.code} เรียบร้อยแล้ว`);
     setTimeout(() => setToastMessage(null), 2500);
@@ -337,8 +345,12 @@ export default function App() {
       return;
     }
 
-    setCodes((prev) => prev.filter((c) => c.id !== id));
-    deleteServerCode(id, currentUserEmail);
+    let updatedList: RedeemCode[] = [];
+    setCodes((prev) => {
+      updatedList = prev.filter((c) => c.id !== id);
+      return updatedList;
+    });
+    deleteServerCode(id, currentUserEmail, updatedList);
 
     setToastMessage('🗑️ ลบโค้ดเรียบร้อยแล้ว');
     setTimeout(() => setToastMessage(null), 2000);

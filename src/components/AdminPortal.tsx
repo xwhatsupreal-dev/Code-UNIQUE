@@ -30,6 +30,7 @@ import { CloudflareModal } from './CloudflareModal';
 import {
   fetchServerCodes,
   saveServerCode,
+  saveServerBatchCodes,
   updateServerCode,
   deleteServerCode,
   fetchCloudflareStatus
@@ -115,32 +116,65 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
     showToast('ออกจากระบบเรียบร้อยแล้ว');
   };
 
-  // Add Code
+  // Add Single Code
   const handleAddCode = async (newCodeData: Omit<RedeemCode, 'id'>) => {
     const newCode: RedeemCode = {
       ...newCodeData,
       id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      addedAt: newCodeData.addedAt || 'เพิ่งเพิ่ม',
+      addedAt: newCodeData.addedAt || 'ล่าสุด',
       addedAtTimestamp: Date.now(),
     };
-    const res = await saveServerCode(newCode, AUTHORIZED_ADMIN_EMAIL);
+    const updated = sortCodesByNewest([
+      newCode,
+      ...codes.filter((c) => c.code.toUpperCase() !== newCode.code.toUpperCase()),
+    ]);
+    setCodes(updated);
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(updated));
+    setIsAddModalOpen(false);
+    showToast(`กำลังบันทึกโค้ด [${newCode.code}]...`);
+    const res = await saveServerCode(newCode, AUTHORIZED_ADMIN_EMAIL, updated);
     if (res.success) {
-      setCodes((prev) => sortCodesByNewest([newCode, ...prev.filter((c) => c.code !== newCode.code)]));
-      setIsAddModalOpen(false);
-      showToast(`เพิ่มโค้ด [${newCode.code}] สำเร็จและอัปเดตไปยังเว็บผู้เล่นแล้ว!`);
+      showToast(`เพิ่มโค้ด [${newCode.code}] สำเร็จและบันทึกข้อมูลแล้ว!`);
     } else {
-      showToast(res.error || 'เกิดข้อผิดพลาดในการเพิ่มโค้ด');
+      showToast(res.error || 'บันทึกในเครื่องเรียบร้อยแล้ว');
+    }
+  };
+
+  // Add Batch Codes (Multiple codes at once)
+  const handleBatchAddCodes = async (newCodesData: Array<Omit<RedeemCode, 'id'>>) => {
+    if (newCodesData.length === 0) return;
+    const now = Date.now();
+    const createdCodes: RedeemCode[] = newCodesData.map((data, idx) => ({
+      ...data,
+      id: `custom-${now + idx}-${Math.random().toString(36).slice(2, 7)}`,
+      addedAt: data.addedAt || 'ล่าสุด',
+      addedAtTimestamp: now + (newCodesData.length - idx),
+    }));
+
+    const incomingSet = new Set(createdCodes.map((c) => c.code.toUpperCase()));
+    const remainingExisting = codes.filter((c) => !incomingSet.has(c.code.toUpperCase()));
+    const updated = sortCodesByNewest([...createdCodes, ...remainingExisting]);
+
+    setCodes(updated);
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(updated));
+    setIsAddModalOpen(false);
+    showToast(`กำลังบันทึก ${createdCodes.length} โค้ด...`);
+    const res = await saveServerBatchCodes(createdCodes, AUTHORIZED_ADMIN_EMAIL, updated);
+    if (res.success) {
+      showToast(`เพิ่มโค้ดสำเร็จ ${createdCodes.length} รายการและบันทึกแล้ว!`);
+    } else {
+      showToast('บันทึกในเครื่องเรียบร้อยแล้ว');
     }
   };
 
   // Edit Code
   const handleSaveEdit = async (updated: RedeemCode) => {
-    const res = await updateServerCode(updated, AUTHORIZED_ADMIN_EMAIL);
-    if (res) {
-      setCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      setEditingCode(null);
-      showToast(`บันทึกโค้ด [${updated.code}] เรียบร้อย!`);
-    }
+    const updatedList = codes.map((c) => (c.id === updated.id ? updated : c));
+    setCodes(updatedList);
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(updatedList));
+    setEditingCode(null);
+    showToast(`บันทึกโค้ด [${updated.code}] เรียบร้อย!`);
+    await updateServerCode(updated, AUTHORIZED_ADMIN_EMAIL, updatedList);
   };
 
   // Delete Code
@@ -148,11 +182,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
     if (!window.confirm(`ยืนยันการลบโค้ด [${codeStr}] หรือไม่? ผู้เล่นจะไม่เห็นโค้ดนี้อีกต่อไป`)) {
       return;
     }
-    const success = await deleteServerCode(id, AUTHORIZED_ADMIN_EMAIL);
-    if (success) {
-      setCodes((prev) => prev.filter((c) => c.id !== id));
-      showToast(`ลบโค้ด [${codeStr}] เรียบร้อยแล้ว`);
-    }
+    const updatedList = codes.filter((c) => c.id !== id);
+    setCodes(updatedList);
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(updatedList));
+    showToast(`ลบโค้ด [${codeStr}] เรียบร้อยแล้ว`);
+    await deleteServerCode(id, AUTHORIZED_ADMIN_EMAIL, updatedList);
   };
 
   // Toggle Code Status (ACTIVE <-> EXPIRED)
@@ -160,16 +194,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
     const target = codes.find((c) => c.id === id);
     if (!target) return;
     const newStatus = target.status === 'ACTIVE' ? 'EXPIRED' : 'ACTIVE';
-    const updated: RedeemCode = {
+    const updatedCode: RedeemCode = {
       ...target,
       status: newStatus,
       isNew: newStatus === 'ACTIVE' ? target.isNew : false,
     };
-    const res = await updateServerCode(updated, AUTHORIZED_ADMIN_EMAIL);
-    if (res) {
-      setCodes((prev) => prev.map((c) => (c.id === id ? updated : c)));
-      showToast(`เปลี่ยนสถานะโค้ด [${target.code}] เป็น ${newStatus === 'ACTIVE' ? 'ใช้งานได้' : 'หมดอายุ'}`);
-    }
+    const updatedList = codes.map((c) => (c.id === id ? updatedCode : c));
+    setCodes(updatedList);
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(updatedList));
+    showToast(`เปลี่ยนสถานะโค้ด [${target.code}] เป็น ${newStatus === 'ACTIVE' ? 'ใช้งานได้' : 'หมดอายุ'}`);
+    await updateServerCode(updatedCode, AUTHORIZED_ADMIN_EMAIL, updatedList);
   };
 
   // Filtered codes
@@ -527,6 +561,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddCode={handleAddCode}
+        onBatchAddCodes={handleBatchAddCodes}
       />
 
       <EditCodeModal

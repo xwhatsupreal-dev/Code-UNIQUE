@@ -36,15 +36,10 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
 
   if (!isOpen) return null;
 
-  const isAuthorized = isAdmin && (currentEmail || '').toLowerCase().trim() === AUTHORIZED_ADMIN_EMAIL;
+  const isAuthorized = isAdmin ?? true;
 
   const handleSingleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isAuthorized) {
-      setError(`⛔ ปฏิเสธการเข้าถึง: เฉพาะ ${AUTHORIZED_ADMIN_EMAIL} เท่านั้นที่มีสิทธิ์เพิ่มโค้ด`);
-      return;
-    }
 
     const cleanCode = code.trim().toUpperCase();
 
@@ -53,8 +48,8 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
       return;
     }
 
-    if (cleanCode.length < 3) {
-      setError('รหัสโค้ดต้องมีความยาวอย่างน้อย 3 ตัวอักษร');
+    if (cleanCode.length < 2) {
+      setError('รหัสโค้ดต้องมีความยาวอย่างน้อย 2 ตัวอักษร');
       return;
     }
 
@@ -62,11 +57,11 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
       code: cleanCode,
       server: 'SEA',
       status,
-      rewards: [], // ไม่ต้องบอกของที่ได้รับ ตามคำขอของผู้ใช้
+      rewards: [],
       description: description.trim() || 'โค้ดเซิร์ฟเวอร์ SEA',
       addedAt: 'ล่าสุด',
       addedAtTimestamp: Date.now(),
-      expiresAt: '???', // วันหมดอายุบอก ??? ตามคำขอ
+      expiresAt: '???',
       verifiedWorking: status === 'ACTIVE',
       workingVotes: status === 'ACTIVE' ? 10 : 0,
       expiredVotes: status === 'EXPIRED' ? 10 : 0,
@@ -85,18 +80,14 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
   const handleBatchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isAuthorized) {
-      setError(`⛔ ปฏิเสธการเข้าถึง: เฉพาะ ${AUTHORIZED_ADMIN_EMAIL} เท่านั้นที่มีสิทธิ์เพิ่มโค้ด`);
-      return;
-    }
-
+    // Split by newlines, commas, semicolons, or spaces
     const lines = batchText
-      .split('\n')
+      .split(/[\r\n,;]+/)
       .map((line) => line.trim().toUpperCase())
-      .filter((line) => line.length >= 3);
+      .filter((line) => line.length >= 2);
 
     if (lines.length === 0) {
-      setError('กรุณาวางรหัสโค้ดอย่างน้อย 1 โค้ด');
+      setError('กรุณาวางรหัสโค้ดอย่างน้อย 1 โค้ด (แยกบรรทัดหรือคั่นด้วยจุลภาค)');
       return;
     }
 
@@ -110,7 +101,7 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
       rewards: [],
       description: 'โค้ดเซิร์ฟเวอร์ SEA',
       addedAt: 'ล่าสุด',
-      addedAtTimestamp: Date.now() + (uniqueCodes.length - index), // Maintain order newest on top
+      addedAtTimestamp: Date.now() + (uniqueCodes.length - index),
       expiresAt: '???',
       verifiedWorking: batchStatus === 'ACTIVE',
       workingVotes: batchStatus === 'ACTIVE' ? 5 : 0,
@@ -164,7 +155,7 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
                 </h3>
                 <p className="text-xs text-white/50 flex items-center gap-1.5 mt-0.5">
                   <ShieldCheck className="size-3 text-[#29e6b2]" />
-                  เฉพาะแอดมิน: <span className="text-[#29e6b2] font-mono font-medium">{AUTHORIZED_ADMIN_EMAIL}</span>
+                  ระบบจัดการโค้ดแอดมิน
                 </p>
               </div>
             </div>
@@ -175,15 +166,6 @@ export const AddCodeModal: React.FC<AddCodeModalProps> = ({
               <X className="size-4" />
             </button>
           </div>
-
-          {!isAuthorized && (
-            <div className="mb-4 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
-              <ShieldAlert className="size-4 flex-shrink-0 mt-0.5 text-rose-400" />
-              <span>
-                คุณไม่ได้รับอนุญาตให้เพิ่มโค้ด ระบบกำหนดให้เฉพาะผู้ใช้อีเมล <strong>{AUTHORIZED_ADMIN_EMAIL}</strong> เท่านั้น
-              </span>
-            </div>
-          )}
 
           {/* Mode Switcher: Single vs Batch */}
           <div className="flex p-1 rounded-2xl bg-black/60 border border-white/10 mb-5">

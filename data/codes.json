@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "code": "SAITAMA999",
+    "server": "SEA",
+    "status": "ACTIVE",
+    "rewards": [],
+    "description": "โค้ดที่ 3",
+    "addedAt": "ล่าสุด",
+    "addedAtTimestamp": 1791892131750,
+    "expiresAt": "???",
+    "verifiedWorking": true,
+    "workingVotes": 1,
+    "expiredVotes": 0,
+    "isNew": true,
+    "isHot": false,
+    "id": "custom-3"
+  },
+  {
+    "code": "ควว",
+    "server": "SEA",
+    "status": "ACTIVE",
+    "rewards": [],
+    "description": "โค้ดเซิร์ฟเวอร์ SEA",
+    "addedAt": "ล่าสุด",
+    "addedAtTimestamp": 1791892131731,
+    "expiresAt": "???",
+    "verifiedWorking": true,
+    "workingVotes": 5,
+    "expiredVotes": 0,
+    "isNew": true,
+    "isHot": false,
+    "id": "user-1791892131730-0-36mr"
+  }
+]

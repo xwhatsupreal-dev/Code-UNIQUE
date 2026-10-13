@@ -86,8 +86,17 @@ async function syncListToCloudflare(codes: RedeemCode[]): Promise<boolean> {
 
 export async function saveServerCode(
   newCode: RedeemCode,
-  email: string | null
+  email: string | null,
+  allCurrentCodes?: RedeemCode[]
 ): Promise<{ success: boolean; error?: string }> {
+  let fullList: RedeemCode[] = [];
+  if (allCurrentCodes && allCurrentCodes.length > 0) {
+    fullList = allCurrentCodes;
+  } else {
+    const existing = (await fetchServerCodes()) || [];
+    fullList = [newCode, ...existing.filter((c) => c.code.toUpperCase() !== newCode.code.toUpperCase() && c.id !== newCode.id)];
+  }
+
   // 1. Try local server
   try {
     await fetch('/api/codes', {
@@ -97,11 +106,14 @@ export async function saveServerCode(
     });
   } catch {}
 
-  // 2. Sync to Cloudflare Edge Worker so Vercel updates for all users
+  // 2. Sync full list to Cloudflare Edge Worker
   try {
-    const existing = (await fetchServerCodes()) || [];
-    const updated = [newCode, ...existing.filter((c) => c.id !== newCode.id && c.code !== newCode.code)];
-    await syncListToCloudflare(updated);
+    await syncListToCloudflare(fullList);
+  } catch {}
+
+  // 3. Persist locally
+  try {
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(fullList));
   } catch {}
 
   return { success: true };
@@ -109,8 +121,19 @@ export async function saveServerCode(
 
 export async function saveServerBatchCodes(
   newCodes: RedeemCode[],
-  email: string | null
+  email: string | null,
+  allCurrentCodes?: RedeemCode[]
 ): Promise<{ success: boolean; error?: string }> {
+  let fullList: RedeemCode[] = [];
+  if (allCurrentCodes && allCurrentCodes.length > 0) {
+    fullList = allCurrentCodes;
+  } else {
+    const existing = (await fetchServerCodes()) || [];
+    const newCodeStrings = new Set(newCodes.map((c) => c.code.toUpperCase()));
+    fullList = [...newCodes, ...existing.filter((c) => !newCodeStrings.has(c.code.toUpperCase()))];
+  }
+
+  // 1. Try local server
   try {
     await fetch('/api/codes/batch', {
       method: 'POST',
@@ -119,11 +142,14 @@ export async function saveServerBatchCodes(
     });
   } catch {}
 
+  // 2. Sync full list to Cloudflare Edge Worker
   try {
-    const existing = (await fetchServerCodes()) || [];
-    const newCodeStrings = new Set(newCodes.map((c) => c.code));
-    const updated = [...newCodes, ...existing.filter((c) => !newCodeStrings.has(c.code))];
-    await syncListToCloudflare(updated);
+    await syncListToCloudflare(fullList);
+  } catch {}
+
+  // 3. Persist locally
+  try {
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(fullList));
   } catch {}
 
   return { success: true };
@@ -131,8 +157,17 @@ export async function saveServerBatchCodes(
 
 export async function updateServerCode(
   updatedCode: RedeemCode,
-  email: string | null
+  email: string | null,
+  allCurrentCodes?: RedeemCode[]
 ): Promise<{ success: boolean; error?: string }> {
+  let fullList: RedeemCode[] = [];
+  if (allCurrentCodes && allCurrentCodes.length > 0) {
+    fullList = allCurrentCodes;
+  } else {
+    const existing = (await fetchServerCodes()) || [];
+    fullList = existing.map((c) => (c.id === updatedCode.id ? updatedCode : c));
+  }
+
   try {
     await fetch(`/api/codes/${updatedCode.id}`, {
       method: 'PUT',
@@ -142,9 +177,11 @@ export async function updateServerCode(
   } catch {}
 
   try {
-    const existing = (await fetchServerCodes()) || [];
-    const updated = existing.map((c) => (c.id === updatedCode.id ? updatedCode : c));
-    await syncListToCloudflare(updated);
+    await syncListToCloudflare(fullList);
+  } catch {}
+
+  try {
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(fullList));
   } catch {}
 
   return { success: true };
@@ -152,8 +189,17 @@ export async function updateServerCode(
 
 export async function deleteServerCode(
   id: string,
-  email: string | null
+  email: string | null,
+  allCurrentCodes?: RedeemCode[]
 ): Promise<{ success: boolean; error?: string }> {
+  let fullList: RedeemCode[] = [];
+  if (allCurrentCodes && allCurrentCodes.length > 0) {
+    fullList = allCurrentCodes;
+  } else {
+    const existing = (await fetchServerCodes()) || [];
+    fullList = existing.filter((c) => c.id !== id);
+  }
+
   try {
     await fetch(`/api/codes/${id}`, {
       method: 'DELETE',
@@ -162,9 +208,11 @@ export async function deleteServerCode(
   } catch {}
 
   try {
-    const existing = (await fetchServerCodes()) || [];
-    const updated = existing.filter((c) => c.id !== id);
-    await syncListToCloudflare(updated);
+    await syncListToCloudflare(fullList);
+  } catch {}
+
+  try {
+    localStorage.setItem('opm_user_managed_codes_v1', JSON.stringify(fullList));
   } catch {}
 
   return { success: true };
