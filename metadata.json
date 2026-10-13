@@ -1,0 +1,6 @@
+{
+  "name": "OPM: The Strongest - Redeem Code Hub & Push Alerts",
+  "description": "ศูนย์รวมโค้ดเกม ONE PUNCH MAN: The Strongest อัปเดตแบบเรียลไทม์ พร้อมระบบแจ้งเตือน Push Notification เมื่อมีโค้ดใหม่ คัดลอกได้ทันที",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
