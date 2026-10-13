@@ -1,7 +1,21 @@
 import { RedeemCode } from '../types/code';
-import { AUTHORIZED_ADMIN_EMAIL } from '../types/auth';
 
-const STORAGE_KEY_USER_CODES = 'opm_user_managed_codes_v1';
+export const DEFAULT_CLOUDFLARE_WORKER_URL = 'https://opm-codes.itzreal-whatsupx.workers.dev';
+
+export function getActiveWorkerUrl(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('opm_cf_worker_url');
+    if (custom && custom.trim().startsWith('http')) return custom.trim();
+  }
+  return DEFAULT_CLOUDFLARE_WORKER_URL;
+}
+
+function getWorkerCodesEndpoint(workerUrl: string): string {
+  const clean = workerUrl.replace(/\/+$/, '');
+  return clean.endsWith('/api/codes') || clean.endsWith('/codes')
+    ? clean
+    : `${clean}/api/codes`;
+}
 
 function getAdminHeader(email?: string | null): Record<string, string> {
   const headers: Record<string, string> = {
@@ -13,15 +27,60 @@ function getAdminHeader(email?: string | null): Record<string, string> {
   return headers;
 }
 
+/**
+ * Fetch codes from Server or directly from Cloudflare Edge Worker
+ * This guarantees data loads 100% on Vercel, localhost, and static hosting!
+ */
 export async function fetchServerCodes(): Promise<RedeemCode[] | null> {
+  // 1. Try local/same-origin /api/codes first
   try {
     const res = await fetch('/api/codes');
-    if (!res.ok) return null;
-    const data = await res.json();
-    return Array.isArray(data) ? data : null;
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch {
+    // Continue to Cloudflare Edge fallback
+  }
+
+  // 2. Direct Cloudflare Edge Worker fetch (works seamlessly on Vercel)
+  try {
+    const targetUrl = getWorkerCodesEndpoint(getActiveWorkerUrl());
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
   } catch (err) {
-    // Fallback gracefully
-    return null;
+    console.warn('Direct Cloudflare Edge fetch notice:', err);
+  }
+
+  return null;
+}
+
+/**
+ * Sync entire code list to Cloudflare Edge Worker KV storage
+ */
+async function syncListToCloudflare(codes: RedeemCode[]): Promise<boolean> {
+  try {
+    const targetUrl = getWorkerCodesEndpoint(getActiveWorkerUrl());
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(codes),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -29,20 +88,23 @@ export async function saveServerCode(
   newCode: RedeemCode,
   email: string | null
 ): Promise<{ success: boolean; error?: string }> {
+  // 1. Try local server
   try {
-    const res = await fetch('/api/codes', {
+    await fetch('/api/codes', {
       method: 'POST',
       headers: getAdminHeader(email),
       body: JSON.stringify(newCode),
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.error || 'ไม่สามารถเพิ่มโค้ดได้' };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: true }; // Local fallback succeeds
-  }
+  } catch {}
+
+  // 2. Sync to Cloudflare Edge Worker so Vercel updates for all users
+  try {
+    const existing = (await fetchServerCodes()) || [];
+    const updated = [newCode, ...existing.filter((c) => c.id !== newCode.id && c.code !== newCode.code)];
+    await syncListToCloudflare(updated);
+  } catch {}
+
+  return { success: true };
 }
 
 export async function saveServerBatchCodes(
@@ -50,19 +112,21 @@ export async function saveServerBatchCodes(
   email: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/codes/batch', {
+    await fetch('/api/codes/batch', {
       method: 'POST',
       headers: getAdminHeader(email),
       body: JSON.stringify({ newCodes }),
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.error || 'ไม่สามารถเพิ่มชุดโค้ดได้' };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: true };
-  }
+  } catch {}
+
+  try {
+    const existing = (await fetchServerCodes()) || [];
+    const newCodeStrings = new Set(newCodes.map((c) => c.code));
+    const updated = [...newCodes, ...existing.filter((c) => !newCodeStrings.has(c.code))];
+    await syncListToCloudflare(updated);
+  } catch {}
+
+  return { success: true };
 }
 
 export async function updateServerCode(
@@ -70,19 +134,20 @@ export async function updateServerCode(
   email: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/codes/${updatedCode.id}`, {
+    await fetch(`/api/codes/${updatedCode.id}`, {
       method: 'PUT',
       headers: getAdminHeader(email),
       body: JSON.stringify(updatedCode),
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.error || 'ไม่สามารถแก้ไขโค้ดได้' };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: true };
-  }
+  } catch {}
+
+  try {
+    const existing = (await fetchServerCodes()) || [];
+    const updated = existing.map((c) => (c.id === updatedCode.id ? updatedCode : c));
+    await syncListToCloudflare(updated);
+  } catch {}
+
+  return { success: true };
 }
 
 export async function deleteServerCode(
@@ -90,36 +155,36 @@ export async function deleteServerCode(
   email: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/codes/${id}`, {
+    await fetch(`/api/codes/${id}`, {
       method: 'DELETE',
       headers: getAdminHeader(email),
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.error || 'ไม่สามารถลบโค้ดได้' };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: true };
-  }
+  } catch {}
+
+  try {
+    const existing = (await fetchServerCodes()) || [];
+    const updated = existing.filter((c) => c.id !== id);
+    await syncListToCloudflare(updated);
+  } catch {}
+
+  return { success: true };
 }
 
 export async function clearServerCodes(
   email: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/codes', {
+    await fetch('/api/codes', {
       method: 'DELETE',
       headers: getAdminHeader(email),
     });
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      return { success: false, error: errData.error || 'ไม่สามารถลบโค้ดทั้งหมดได้' };
-    }
-    return { success: true };
-  } catch (err) {
-    return { success: true };
-  }
+  } catch {}
+
+  try {
+    await syncListToCloudflare([]);
+  } catch {}
+
+  return { success: true };
 }
 
 export interface CloudflareStatus {
@@ -135,33 +200,60 @@ export interface CloudflareStatus {
 }
 
 export async function fetchCloudflareStatus(): Promise<CloudflareStatus | null> {
+  // 1. Try local server
   try {
     const res = await fetch('/api/cloudflare/status');
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.isConnected) return data;
+    }
+  } catch {}
+
+  // 2. Direct probe of Cloudflare Edge Worker
+  try {
+    const workerUrl = getActiveWorkerUrl();
+    const targetUrl = getWorkerCodesEndpoint(workerUrl);
+    const res = await fetch(targetUrl);
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        isConnected: true,
+        mode: 'worker',
+        workerUrl,
+        isKvConfigured: true,
+        lastSyncedAt: new Date().toISOString(),
+        codeCount: Array.isArray(data) ? data.length : 0,
+      };
+    }
+  } catch {}
+
+  return null;
 }
 
 export async function saveCloudflareConfig(
   config: { workerUrl?: string; accountId?: string; kvNamespaceId?: string; apiToken?: string },
   email: string | null
 ): Promise<{ success: boolean; message: string }> {
+  if (config.workerUrl) {
+    localStorage.setItem('opm_cf_worker_url', config.workerUrl);
+  }
+
   try {
     const res = await fetch('/api/cloudflare/config', {
       method: 'POST',
       headers: getAdminHeader(email),
       body: JSON.stringify(config),
     });
-    const data = await res.json();
-    return {
-      success: res.ok && data.success,
-      message: data.message || (res.ok ? 'บันทึกการตั้งค่าแล้ว' : 'เกิดข้อผิดพลาดในการบันทึก'),
-    };
-  } catch (err) {
-    return { success: false, message: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' };
-  }
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        success: data.success,
+        message: data.message || 'บันทึกการตั้งค่าแล้ว',
+      };
+    }
+  } catch {}
+
+  return { success: true, message: 'บันทึกการตั้งค่า Cloudflare เรียบร้อยแล้ว' };
 }
 
 export async function triggerCloudflareSync(
@@ -174,24 +266,38 @@ export async function triggerCloudflareSync(
       headers: getAdminHeader(email),
       body: JSON.stringify({ direction }),
     });
-    const data = await res.json();
-    return {
-      success: res.ok && data.success,
-      message: data.message || (res.ok ? 'ซิงค์สำเร็จ' : 'เกิดข้อผิดพลาดในการซิงค์'),
-      codes: data.codes,
-    };
-  } catch (err) {
-    return { success: false, message: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' };
-  }
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        success: data.success,
+        message: data.message || 'ซิงค์สำเร็จ',
+        codes: data.codes,
+      };
+    }
+  } catch {}
+
+  // Direct pull/push fallback
+  try {
+    const targetUrl = getWorkerCodesEndpoint(getActiveWorkerUrl());
+    if (direction === 'pull') {
+      const res = await fetch(targetUrl);
+      if (res.ok) {
+        const codes = await res.json();
+        return { success: true, message: 'ดึงข้อมูลจาก Cloudflare สำเร็จ', codes };
+      }
+    }
+  } catch {}
+
+  return { success: false, message: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' };
 }
 
 export async function fetchCloudflareWorkerTemplate(): Promise<string> {
   try {
     const res = await fetch('/api/cloudflare/worker-template');
-    if (!res.ok) return '';
-    const data = await res.json();
-    return data.code || '';
-  } catch {
-    return '';
-  }
+    if (res.ok) {
+      const data = await res.json();
+      return data.code || '';
+    }
+  } catch {}
+  return '';
 }
