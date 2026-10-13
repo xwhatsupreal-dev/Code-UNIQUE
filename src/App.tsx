@@ -24,11 +24,52 @@ import {
   fetchCloudflareStatus,
 } from './services/codeApiService';
 import { CloudflareModal } from './components/CloudflareModal';
+import { AdminPortal } from './components/AdminPortal';
 
 // Storage key specifically for user-managed custom codes
 const STORAGE_KEY_USER_CODES = 'opm_user_managed_codes_v1';
 
 export default function App() {
+  // Simple URL routing: check if pathname is /admin or hash is #admin
+  const [currentRoute, setCurrentRoute] = useState<'home' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/admin' || path.startsWith('/admin/') || hash === '#admin') {
+        return 'admin';
+      }
+    }
+    return 'home';
+  });
+
+  // Listen to popstate or hashchange
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/admin' || path.startsWith('/admin/') || hash === '#admin') {
+        setCurrentRoute('admin');
+      } else {
+        setCurrentRoute('home');
+      }
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  const navigateTo = (route: 'home' | 'admin') => {
+    setCurrentRoute(route);
+    if (typeof window !== 'undefined') {
+      const newPath = route === 'admin' ? '/admin' : '/';
+      window.history.pushState({}, '', newPath);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // 4 Main Menus State: 'latest' | 'all' | 'notifications' | 'guide'
   const [activeTab, setActiveTab] = useState<MainMenuTab>('latest');
 
@@ -384,8 +425,8 @@ export default function App() {
     setNotifPermission(granted ? 'granted' : 'denied');
     if (granted) {
       setNotifSettings((s) => ({ ...s, enabled: true }));
-      sendWebNotification('เปิดการแจ้งเตือนสำเร็จ!', {
-        body: 'คุณจะได้รับการแจ้งเตือนทันทีเมื่อมีโค้ด ONE PUNCH MAN ใหม่',
+      sendWebNotification('OPM The Strongest', {
+        body: 'เปิดระบบแจ้งเตือนโค้ดใหม่เรียบร้อยแล้ว',
       });
       setToastMessage('เปิดการแจ้งเตือนเรียบร้อยแล้ว!');
       setTimeout(() => setToastMessage(null), 2500);
@@ -399,8 +440,8 @@ export default function App() {
       return;
     }
     if (soundEnabled) playAlertSound();
-    sendWebNotification('ทดสอบแจ้งเตือน: OPM The Strongest', {
-      body: 'ระบบแจ้งเตือนทำงานได้สมบูรณ์แบบ คุณจะไม่พลาดโค้ดใหม่ล่าสุด!',
+    sendWebNotification('OPM The Strongest', {
+      body: 'ระบบแจ้งเตือนทำงานได้ตามปกติ คุณจะได้รับแจ้งเมื่อมีโค้ดใหม่',
     });
     setTestSent(true);
     setToastMessage('ส่งการแจ้งเตือนทดสอบแล้ว!');
@@ -435,8 +476,8 @@ export default function App() {
 
       if (soundEnabled) playAlertSound();
 
-      sendWebNotification(`⚡ โค้ดใหม่เข้ามาแล้ว: ${dropCode.code}`, {
-        body: 'มีโค้ดใหม่เซิร์ฟเวอร์ SEA เข้ามาแล้ว ถูกจัดเรียงไว้บนสุด!',
+      sendWebNotification(`OPM The Strongest: โค้ดใหม่ ${dropCode.code}`, {
+        body: 'โค้ดของขวัญเซิร์ฟเวอร์ SEA ใหม่พร้อมใช้งานแล้ว',
       });
 
       setToastMessage(`💥 มีโค้ดใหม่เข้ามา: ${dropCode.code} (จัดขึ้นบนสุดแล้ว)`);
@@ -496,6 +537,11 @@ export default function App() {
 
   const activeCodesCount = codes.filter((c) => c.status === 'ACTIVE').length;
 
+  // Render Dedicated Admin Portal when on /admin route
+  if (currentRoute === 'admin') {
+    return <AdminPortal onNavigateHome={() => navigateTo('home')} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col font-['Kanit','Plus_Jakarta_Sans',sans-serif] pb-24 md:pb-12 antialiased selection:bg-[#29e6b2] selection:text-black">
       {/* SwitchHub Floating Glass Header (Smooth Desktop Nav) */}
@@ -515,6 +561,7 @@ export default function App() {
         currentUserEmail={currentUserEmail}
         onOpenAuthModal={() => setIsAdminAuthOpen(true)}
         onOpenCloudflareModal={isAdmin ? () => setIsCloudflareModalOpen(true) : undefined}
+        onNavigateAdmin={() => navigateTo('admin')}
       />
 
       {/* Main Content Area */}
@@ -545,16 +592,7 @@ export default function App() {
                 </h2>
                 <span className="text-[11px] text-white/40 hidden sm:inline">· เรียงตามที่มาใหม่อัตโนมัติ</span>
               </div>
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#29e6b2]/10 hover:bg-[#29e6b2]/20 border border-[#29e6b2]/40 text-[#29e6b2] text-xs font-semibold cursor-pointer transition-all active:scale-95"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>+ เพิ่มโค้ด (แอดมิน)</span>
-                  </button>
-                )}
+              <div>
                 <button
                   onClick={() => setActiveTab('all')}
                   className="text-xs text-[#29e6b2] hover:underline font-semibold cursor-pointer hidden xs:inline"
@@ -572,12 +610,9 @@ export default function App() {
                     key={code.id}
                     code={code}
                     isRedeemed={redeemedCodeIds.includes(code.id)}
-                    canEdit={isAdmin}
+                    canEdit={false}
                     onToggleRedeemed={handleToggleRedeemed}
                     onCopy={handleCopyCode}
-                    onEdit={isAdmin ? (c) => setEditingCode(c) : undefined}
-                    onDelete={isAdmin ? handleDeleteCode : undefined}
-                    onToggleStatus={isAdmin ? handleToggleCodeStatus : undefined}
                   />
                 ))}
               </div>
@@ -589,20 +624,9 @@ export default function App() {
                 <h3 className="text-base sm:text-lg font-bold text-white mb-1">
                   ยังไม่มีโค้ดในระบบ
                 </h3>
-                <p className="text-xs sm:text-sm text-white/50 max-w-md mx-auto mb-5 leading-relaxed">
-                  {isAdmin
-                    ? `คุณได้ลบโค้ดเดิมออกทั้งหมดแล้ว สามารถกดปุ่มด้านล่างเพื่อเพิ่มโค้ดเกมเซิร์ฟเวอร์ SEA ในฐานะ ${AUTHORIZED_ADMIN_EMAIL} ได้ทันที`
-                    : 'ขณะนี้ยังไม่มีโค้ดใหม่ในระบบ ระบบจะทำการตรวจสอบและอัปเดตโค้ดใหม่ล่าสุดให้โดยอัตโนมัติ'}
+                <p className="text-xs sm:text-sm text-white/50 max-w-md mx-auto mb-2 leading-relaxed">
+                  ขณะนี้ยังไม่มีโค้ดใหม่ในระบบ กรุณารอแอดมินอัปเดตโค้ดใหม่ล่าสุดให้เร็วๆ นี้
                 </p>
-                {isAdmin && (
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#29e6b2] hover:bg-[#3bf5c1] text-black font-bold text-xs sm:text-sm shadow-[0_0_24px_rgba(41,230,178,0.4)] active:scale-95 transition-all cursor-pointer"
-                  >
-                    <Plus className="size-4" />
-                    <span>+ เพิ่มโค้ดแรกของคุณ (แอดมิน)</span>
-                  </button>
-                )}
               </div>
             )}
           </section>
@@ -729,12 +753,9 @@ export default function App() {
                     key={code.id}
                     code={code}
                     isRedeemed={redeemedCodeIds.includes(code.id)}
-                    canEdit={isAdmin}
+                    canEdit={false}
                     onToggleRedeemed={handleToggleRedeemed}
                     onCopy={handleCopyCode}
-                    onEdit={isAdmin ? (c) => setEditingCode(c) : undefined}
-                    onDelete={isAdmin ? handleDeleteCode : undefined}
-                    onToggleStatus={isAdmin ? handleToggleCodeStatus : undefined}
                   />
                 ))}
               </div>
@@ -743,15 +764,6 @@ export default function App() {
                 <p className="text-sm text-white/60">
                   {codes.length === 0 ? 'ยังไม่มีโค้ดในระบบ' : 'ไม่พบโค้ดที่ตรงกับการค้นหา'}
                 </p>
-                {isAdmin && (
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="mt-3 px-5 py-2 rounded-full bg-[#29e6b2] text-black text-xs font-bold hover:bg-[#34f0bd] transition-all cursor-pointer inline-flex items-center gap-1.5"
-                  >
-                    <Plus className="size-3.5" />
-                    <span>+ เพิ่มโค้ด (แอดมิน)</span>
-                  </button>
-                )}
               </div>
             )}
           </section>
@@ -808,12 +820,72 @@ export default function App() {
                 )}
               </div>
 
-              {/* Sound & Alert Options */}
+              {/* Push Notification Switch & Controls */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-white/70 uppercase tracking-wider">
-                  การตั้งค่าเสียงและการแจ้งเตือน
+                  การตั้งค่าการแจ้งเตือนในเว็บ
                 </h4>
 
+                {/* Main Notification Master Switch */}
+                <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#29e6b2]/30 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className={`size-9 rounded-xl flex items-center justify-center ${
+                      notifSettings.enabled
+                        ? 'bg-[#29e6b2]/10 text-[#29e6b2] border border-[#29e6b2]/30'
+                        : 'bg-white/5 text-white/40 border border-white/10'
+                    }`}>
+                      <Bell className="size-4.5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white flex items-center gap-2">
+                        <span>รับการแจ้งเตือนโค้ดใหม่</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          notifSettings.enabled
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-white/10 text-white/40'
+                        }`}>
+                          {notifSettings.enabled ? 'เปิดอยู่' : 'ปิดอยู่'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-white/45 mt-0.5">
+                        แจ้งเตือนบนหน้าจอทันทีเมื่อแอดมินเพิ่มโค้ดใหม่เข้าสู่ระบบ
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!notifSettings.enabled) {
+                        // Turning ON
+                        if (notifPermission !== 'granted') {
+                          await handleRequestPermission();
+                        } else {
+                          setNotifSettings((s) => ({ ...s, enabled: true }));
+                          setToastMessage('เปิดการแจ้งเตือนโค้ดใหม่แล้ว!');
+                          setTimeout(() => setToastMessage(null), 2500);
+                        }
+                      } else {
+                        // Turning OFF
+                        setNotifSettings((s) => ({ ...s, enabled: false }));
+                        setToastMessage('ปิดการแจ้งเตือนเรียบร้อย');
+                        setTimeout(() => setToastMessage(null), 2500);
+                      }
+                    }}
+                    className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      notifSettings.enabled ? 'bg-[#29e6b2]' : 'bg-white/20'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block size-6 transform rounded-full bg-black shadow-lg ring-0 transition duration-200 ease-in-out ${
+                        notifSettings.enabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Sound Effect Toggle */}
                 <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
                   <div className="flex items-center gap-2.5">
                     <Volume2 className="size-4 text-[#29e6b2]" />
@@ -833,7 +905,7 @@ export default function App() {
 
               {/* Test Action */}
               <div className="pt-2 border-t border-white/[0.08] flex items-center justify-between">
-                <span className="text-xs text-white/40">ทดสอบการส่งการแจ้งเตือน</span>
+                <span className="text-xs text-white/40">ทดสอบระบบแจ้งเตือน</span>
                 <button
                   onClick={handleSendTestNotification}
                   disabled={testSent}
@@ -859,11 +931,11 @@ export default function App() {
                 วิธีใส่โค้ด OPM The Strongest
               </h1>
               <p className="text-xs sm:text-sm text-white/60 mt-1">
-                คู่มือการแลกโค้ดของขวัญในเกม พร้อมกล่องจำลองการแลกโค้ด
+                คู่มือการแลกโค้ดของขวัญในเกมทีละขั้นตอน
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="max-w-3xl mx-auto mb-8">
               {/* Steps List */}
               <div className="space-y-3">
                 {[
@@ -890,16 +962,16 @@ export default function App() {
                 ].map((item) => (
                   <div
                     key={item.step}
-                    className="flex items-start gap-3.5 p-4 rounded-2xl bg-[#0c0d0e]/80 border border-white/[0.08]"
+                    className="flex items-start gap-4 p-5 rounded-2xl bg-[#0c0d0e]/80 border border-white/[0.08]"
                   >
-                    <div className="size-8 rounded-xl bg-[#29e6b2]/10 border border-[#29e6b2]/30 flex items-center justify-center font-mono font-bold text-xs text-[#29e6b2] flex-shrink-0">
+                    <div className="size-9 rounded-xl bg-[#29e6b2]/10 border border-[#29e6b2]/30 flex items-center justify-center font-mono font-bold text-xs sm:text-sm text-[#29e6b2] flex-shrink-0">
                       {item.step}
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-white mb-0.5">
+                      <h4 className="text-sm sm:text-base font-bold text-white mb-1">
                         {item.title}
                       </h4>
-                      <p className="text-xs text-white/50 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-white/50 leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
@@ -907,64 +979,8 @@ export default function App() {
                 ))}
               </div>
 
-              {/* In-Game Redemption Simulator */}
-              <div className="p-6 rounded-3xl bg-[#0c0d0e]/90 border border-white/10 backdrop-blur-xl flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.08] mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="size-2 rounded-full bg-[#29e6b2] animate-pulse" />
-                      <span className="text-xs font-bold text-white">กล่องจำลองการแลกโค้ดในเกม</span>
-                    </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-white/40">
-                      IN-GAME SIMULATOR
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-white/60 mb-4 leading-relaxed">
-                    ทดลองวางโค้ดที่คัดลอกมาเพื่อตรวจสอบว่าโค้ดยังใช้งานได้หรือไม่ก่อนเข้าเกมจริง
-                  </p>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-white/70 mb-1">
-                        วาง Redeem Code ที่นี่:
-                      </label>
-                      <input
-                        type="text"
-                        value={simulatorInput}
-                        onChange={(e) => {
-                          setSimulatorInput(e.target.value.toUpperCase());
-                          setSimulatorResult(null);
-                        }}
-                        placeholder="เช่น OPM2026TH"
-                        className="w-full px-4 py-2.5 rounded-xl bg-black/70 border border-white/15 text-white font-mono font-bold text-sm focus:outline-none focus:border-[#29e6b2] transition-colors"
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleSimulateRedeem}
-                      className="w-full py-2.5 rounded-xl bg-[#29e6b2] text-black font-bold text-xs hover:bg-[#34f0bd] active:scale-95 transition-all shadow-[0_0_16px_rgba(41,230,178,0.35)] cursor-pointer"
-                    >
-                      กดแลกรับของรางวัล (จำลอง)
-                    </button>
-                  </div>
-
-                  {simulatorResult && (
-                    <div
-                      className={`mt-4 p-3.5 rounded-xl border text-xs leading-relaxed ${
-                        simulatorResult.success
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                      }`}
-                    >
-                      {simulatorResult.message}
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-4 border-t border-white/[0.08] text-[11px] text-white/40 text-center mt-6">
-                  หมายเหตุ: โค้ดแต่ละโค้ดสามารถแลกได้ 1 ครั้งต่อ 1 บัญชีเกมเท่านั้น
-                </div>
+              <div className="p-4 rounded-2xl bg-[#0c0d0e]/40 border border-white/[0.06] text-xs text-white/40 text-center mt-4">
+                หมายเหตุ: โค้ดแต่ละโค้ดสามารถแลกรับของรางวัลได้ 1 ครั้งต่อ 1 บัญชีเกมเท่านั้น
               </div>
             </div>
           </section>
@@ -1009,15 +1025,16 @@ export default function App() {
                 }}
                 className="relative z-10 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer min-h-[50px] select-none"
               >
-                {/* Active Rounded Box: Smooth medium dark grey filled rounded box like reference */}
+                {/* Active Rounded Box: Smooth fluid spring sliding indicator */}
                 {isActive && (
                   <motion.div
                     layoutId="mobileBottomIndicator"
                     className="absolute inset-0 rounded-xl bg-[#242629] border border-white/[0.08] shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]"
                     transition={{
                       type: 'spring',
-                      stiffness: 450,
-                      damping: 35,
+                      stiffness: 340,
+                      damping: 27,
+                      mass: 0.8,
                     }}
                   />
                 )}
@@ -1105,7 +1122,7 @@ export default function App() {
           <button
             onClick={() => {
               setIsGuestPreview(false);
-              setToastMessage('👑 สลับกลับสู่โหมดแอดมิน (teerasit.thanwa@gmail.com)');
+              setToastMessage('👑 สลับกลับสู่โหมดแอดมิน');
               setTimeout(() => setToastMessage(null), 3000);
             }}
             className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/95 border border-emerald-500/40 text-emerald-300 text-xs font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500/10 transition-all cursor-pointer"

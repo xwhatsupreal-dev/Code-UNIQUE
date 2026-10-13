@@ -44,20 +44,23 @@ export async function sendWebNotification(
     return false;
   }
 
-  const defaultIcon = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23facc15"/><text x="50" y="65" font-size="40" text-anchor="middle" font-weight="900" fill="%23dc2626">OPM</text></svg>';
+  const defaultIcon = '/icon-192.png';
+  const defaultBadge = '/badge-96.png';
 
   // Try service worker first for background support
   if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.ready;
       if (reg && reg.showNotification) {
-        await reg.showNotification(title, {
-          body: options?.body || 'มีโค้ดใหม่เข้ามาแล้ว!',
+        const notifOpts: NotificationOptions & { renotify?: boolean } = {
+          body: options?.body || 'มีโค้ดใหม่พร้อมใช้งานแล้ว',
           icon: options?.icon || defaultIcon,
-          badge: defaultIcon,
+          badge: defaultBadge,
           tag: options?.tag || 'opm-code-alert',
+          renotify: false,
           data: options?.data || { url: window.location.href }
-        });
+        };
+        await reg.showNotification(title, notifOpts);
         return true;
       }
     } catch {
@@ -67,7 +70,7 @@ export async function sendWebNotification(
 
   try {
     const notif = new Notification(title, {
-      body: options?.body || 'มีโค้ดใหม่เข้ามาแล้ว!',
+      body: options?.body || 'มีโค้ดใหม่พร้อมใช้งานแล้ว',
       icon: options?.icon || defaultIcon,
       tag: options?.tag || 'opm-code-alert'
     });

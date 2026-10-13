@@ -90,7 +90,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({
                   <button
                     onClick={() => onEdit(code)}
                     className="size-6 rounded-full flex items-center justify-center text-white/30 hover:text-[#29e6b2] hover:bg-[#29e6b2]/10 transition-colors cursor-pointer"
-                    title="แก้ไขโค้ด (เฉพาะแอดมิน teerasit.thanwa@gmail.com)"
+                    title="แก้ไขโค้ด"
                   >
                     <Edit3 className="size-3" />
                   </button>
@@ -100,7 +100,7 @@ export const CodeCard: React.FC<CodeCardProps> = ({
                   <button
                     onClick={() => onDelete(code.id)}
                     className="size-6 rounded-full flex items-center justify-center text-white/30 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                    title="ลบโค้ดนี้ (เฉพาะแอดมิน teerasit.thanwa@gmail.com)"
+                    title="ลบโค้ดนี้"
                   >
                     <Trash2 className="size-3" />
                   </button>
