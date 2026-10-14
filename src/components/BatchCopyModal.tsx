@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { X, Copy, Check, Sparkles } from 'lucide-react';
 import { RedeemCode } from '../types/code';
+import { Language, translations } from '../utils/translations';
 
 interface BatchCopyModalProps {
   isOpen: boolean;
   onClose: () => void;
   codes: RedeemCode[];
   onCopySuccess: () => void;
+  lang?: Language;
 }
 
 export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
@@ -14,8 +16,10 @@ export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
   onClose,
   codes,
   onCopySuccess,
+  lang = 'th',
 }) => {
   const [copied, setCopied] = useState(false);
+  const t = translations[lang];
   const activeCodes = codes.filter((c) => c.status === 'ACTIVE');
 
   if (!isOpen) return null;
@@ -29,6 +33,9 @@ export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const modalSubText = t.modalSub.replace('{count}', String(activeCodes.length));
+  const modalCopyBtnText = t.modalCopyBtn.replace('{count}', String(activeCodes.length));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
       <div className="relative w-full max-w-md bg-[#0c0d0e] border border-white/10 rounded-2xl shadow-[0_24px_50px_rgba(0,0,0,0.95)] overflow-hidden">
@@ -39,8 +46,8 @@ export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
               <Sparkles className="size-4" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white">คัดลอกโค้ดทั้งหมดในครั้งเดียว</h2>
-              <p className="text-[11px] text-white/50">รวมทั้งหมด {activeCodes.length} โค้ดที่ยังใช้งานได้</p>
+              <h2 className="text-sm sm:text-base font-bold text-white">{t.modalTitle}</h2>
+              <p className="text-[11px] text-white/50">{modalSubText}</p>
             </div>
           </div>
           <button
@@ -63,7 +70,7 @@ export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
           </div>
 
           <p className="text-[11px] text-white/40 leading-relaxed">
-            * คัดลอกนำไปแชร์ให้เพื่อนในกิลด์ หรือวางทีละโค้ดในเกมได้สะดวกรวดเร็ว
+            {t.modalNote}
           </p>
 
           <button
@@ -77,12 +84,12 @@ export const BatchCopyModal: React.FC<BatchCopyModalProps> = ({
             {copied ? (
               <>
                 <Check className="size-4 text-black" />
-                <span>คัดลอกทั้งหมดแล้ว!</span>
+                <span>{t.modalCopiedBtn}</span>
               </>
             ) : (
               <>
                 <Copy className="size-4" />
-                <span>คัดลอกทั้ง {activeCodes.length} โค้ดทันที</span>
+                <span>{modalCopyBtnText}</span>
               </>
             )}
           </button>

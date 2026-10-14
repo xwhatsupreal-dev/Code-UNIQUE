@@ -45,7 +45,7 @@ export const EditCodeModal: React.FC<EditCodeModalProps> = ({
     e.preventDefault();
 
     if (!isAdmin) {
-      setError(`ปฏิเสธสิทธิ์: เฉพาะ ${AUTHORIZED_ADMIN_EMAIL} เท่านั้นที่มีสิทธิ์แก้ไขโค้ด`);
+      setError('ปฏิเสธสิทธิ์: เฉพาะผู้ดูแลระบบเท่านั้นที่มีสิทธิ์แก้ไขโค้ด');
       return;
     }
 
@@ -93,7 +93,7 @@ export const EditCodeModal: React.FC<EditCodeModalProps> = ({
                   </span>
                 </h3>
                 <p className="text-xs text-white/40">
-                  สิทธิ์ผู้ดูแลระบบ: <span className="text-[#29e6b2]">{AUTHORIZED_ADMIN_EMAIL}</span>
+                  สิทธิ์ผู้ดูแลระบบ (Admin)
                 </p>
               </div>
             </div>
@@ -110,7 +110,7 @@ export const EditCodeModal: React.FC<EditCodeModalProps> = ({
             {!isAdmin && (
               <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
                 <ShieldAlert className="size-4 flex-shrink-0 mt-0.5 text-rose-400" />
-                <span>คุณไม่มีสิทธิ์แก้ไขโค้ดนี้ เฉพาะผู้ใช้อีเมล <strong>{AUTHORIZED_ADMIN_EMAIL}</strong> เท่านั้น</span>
+                <span>คุณไม่มีสิทธิ์แก้ไขโค้ดนี้ เฉพาะผู้ดูแลระบบเท่านั้น</span>
               </div>
             )}
 

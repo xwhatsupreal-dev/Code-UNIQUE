@@ -28,13 +28,6 @@ export interface RedeemCode {
   sourceOrder?: number;
 }
 
-export interface NotificationSettings {
-  enabled: boolean;
-  soundEnabled: boolean;
-  onlyGems: boolean;
-  onlyTickets: boolean;
-  minGemsThreshold: number;
-}
 
 export interface ActivityEvent {
   id: string;

@@ -36,6 +36,7 @@ import {
   fetchCloudflareStatus
 } from '../services/codeApiService';
 import { sortCodesByNewest } from '../services/codeSyncService';
+import { isCodeLatest, formatCodeTime } from '../utils/dateFormatter';
 
 interface AdminPortalProps {
   onNavigateHome: () => void;
@@ -433,7 +434,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
                     : 'text-white/60 hover:text-white'
                 }`}
               >
-                {filter === 'ALL' ? 'ทั้งหมด' : filter === 'ACTIVE' ? 'ใช้งานได้' : 'หมดอายุ'}
+                {filter === 'ALL' ? 'ทั้งหมด' : filter === 'ACTIVE' ? 'คาดว่ายังใช้งานได้' : 'หมดอายุ'}
               </button>
             ))}
           </div>
@@ -471,6 +472,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
           <div className="space-y-3">
             {filteredCodes.map((code) => {
               const isActive = code.status === 'ACTIVE';
+              const isLatest = isCodeLatest(code);
+              const timeInfo = formatCodeTime(code.addedAtTimestamp, code.addedAt);
+
               return (
                 <div
                   key={code.id}
@@ -497,19 +501,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
                         }`}
                         title="คลิกเพื่อสลับสถานะ"
                       >
-                        {isActive ? '● ใช้งานได้ (คลิกเพื่อเปลี่ยน)' : '✕ หมดอายุ (คลิกเพื่อเปลี่ยน)'}
+                        {isActive ? '● คาดว่ายังใช้งานได้ (คลิกเพื่อเปลี่ยน)' : '✕ หมดอายุ (คลิกเพื่อเปลี่ยน)'}
                       </button>
 
-                      {code.isNew && isActive && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#29e6b2]/20 text-[#29e6b2] border border-[#29e6b2]/40 flex items-center gap-1">
+                      {/* 7-Day Latest Badge */}
+                      {isLatest && isActive ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#29e6b2]/20 text-[#29e6b2] border border-[#29e6b2]/40 flex items-center gap-1" title={`โชว์คำว่าล่าสุดอีก ${timeInfo.daysRemaining} วัน`}>
                           <Sparkles className="size-3" />
-                          NEW
+                          ล่าสุด (เหลืออีก {timeInfo.daysRemaining} วัน)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-white/40 px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06]">
+                          เกิน 7 วัน (ไม่แสดงคำว่าล่าสุด)
                         </span>
                       )}
 
                       <span className="text-[10px] text-white/40">
                         เซิร์ฟเวอร์: {code.server}
                       </span>
+                    </div>
+
+                    {/* Arrival time indicator */}
+                    <div className="flex items-center gap-1.5 text-xs text-white/60 mt-1">
+                      <Clock className="size-3 text-[#29e6b2]" />
+                      <span>เวลาที่โค้ดมา: <strong className="text-white/85 font-normal">{timeInfo.full}</strong> <span className="text-[#29e6b2]">({timeInfo.relative})</span></span>
                     </div>
 
                     {/* Rewards list */}

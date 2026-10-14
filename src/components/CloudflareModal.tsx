@@ -508,7 +508,7 @@ export const CloudflareModal: React.FC<CloudflareModalProps> = ({
           <div className="p-4 bg-black/60 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-white/50">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="size-3.5 text-emerald-400" />
-              <span>ความปลอดภัย: จำกัดสิทธิ์เฉพาะอีเมล {AUTHORIZED_ADMIN_EMAIL}</span>
+              <span>ความปลอดภัย: จำกัดสิทธิ์เฉพาะผู้ดูแลระบบที่ได้รับอนุญาต</span>
             </span>
             <button
               onClick={onClose}

@@ -4,7 +4,7 @@ import { RedeemCode } from '../types/code';
  * Sorts code list:
  * 1. Active codes come before Expired codes
  * 2. Within active codes: highest addedAtTimestamp / isNew first, then sourceOrder (lower index = newer)
- * This ensures any newly added code (by teerasit.thanwa@gmail.com) is always placed at the very top automatically.
+ * This ensures any newly added code is always placed at the very top automatically.
  */
 export function sortCodesByNewest(codes: RedeemCode[]): RedeemCode[] {
   return [...codes].sort((a, b) => {
