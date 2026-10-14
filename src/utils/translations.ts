@@ -10,7 +10,7 @@ export const translations = {
     toggleSound: 'เสียงเอฟเฟกต์',
 
     // Hero Banner
-    heroTag: '// OFFICIAL REDEEM HUB · SEA SERVER',
+    heroTag: '// UNOFFICIAL REDEEM HUB · SEA SERVER',
     heroTitlePrefix: 'โค้ดเกม',
     heroTitleHighlight: 'OPM The Strongest',
     heroSubtitle: 'รวบรวมโค้ดเกม ONE PUNCH MAN: The Strongest สำหรับเซิร์ฟเวอร์ SEA อัปเดตแบบเรียลไทม์ ใช้งานได้จริง',
@@ -89,7 +89,7 @@ export const translations = {
     toggleSound: 'Sound FX',
 
     // Hero Banner
-    heroTag: '// OFFICIAL REDEEM HUB · SEA SERVER',
+    heroTag: '// UNOFFICIAL REDEEM HUB · SEA SERVER',
     heroTitlePrefix: 'Redeem Codes',
     heroTitleHighlight: 'OPM The Strongest',
     heroSubtitle: 'Real-time updated redeem codes for ONE PUNCH MAN: The Strongest (SEA Server). Verified & working.',

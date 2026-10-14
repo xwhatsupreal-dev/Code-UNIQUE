@@ -56,8 +56,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Desktop 3 Main Menus with Rounded Box Frame Indicator */}
-          <div className="hidden md:flex items-center gap-1 bg-[#141618]/90 border border-white/[0.08] p-1.5 rounded-xl relative shadow-inner">
+          {/* Desktop 3 Main Menus with Direct Sliding Indicator */}
+          <div className="hidden md:grid grid-cols-3 gap-1 bg-[#141618]/90 border border-white/[0.08] p-1.5 rounded-xl relative shadow-inner w-[340px]">
+            {/* Sliding background indicator */}
+            <motion.div
+              className="absolute inset-y-1.5 rounded-lg bg-[#242629] border border-white/[0.08] shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] pointer-events-none"
+              initial={false}
+              animate={{
+                left: `calc(6px + ${Math.max(0, menuItems.findIndex((m) => m.id === activeTab))} * (100% - 12px) / 3)`,
+                width: `calc((100% - 12px) / 3)`,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 32,
+                mass: 0.8,
+              }}
+            />
+
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -65,26 +81,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onSelectTab(item.id)}
-                  className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs sm:text-[13px] font-medium transition-all duration-200 cursor-pointer ${
+                  className={`relative z-10 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs sm:text-[13px] font-medium transition-colors duration-200 cursor-pointer select-none ${
                     isActive ? 'text-white font-semibold' : 'text-[#8e939a] hover:text-white'
                   }`}
                 >
-                  {/* Selected Box Frame: Ultra smooth sliding rounded box indicator */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeMainMenuIndicator"
-                      transition={{
-                        type: 'spring',
-                        stiffness: 350,
-                        damping: 28,
-                        mass: 0.8,
-                      }}
-                      className="absolute inset-0 bg-[#242629] border border-white/[0.08] rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)]"
-                    />
-                  )}
-
                   <Icon className={`size-4 relative z-10 transition-colors ${isActive ? 'text-white stroke-[2.2]' : 'text-[#8e939a]'}`} />
-                  <span className="relative z-10">{item.label}</span>
+                  <span className="relative z-10 whitespace-nowrap">{item.label}</span>
                 </button>
               );
             })}
