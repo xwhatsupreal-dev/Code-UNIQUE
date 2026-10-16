@@ -37,13 +37,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="fixed top-0 left-0 right-0 z-40 px-2 sm:px-5 pt-2 sm:pt-3 pointer-events-none">
       <div className="mx-auto max-w-5xl pointer-events-auto">
         {/* Top Floating Glass Bar */}
-        <nav className="nav-shell rounded-2xl px-2.5 sm:px-4.5 py-2.5 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-3 shadow-[0_14px_32px_rgba(0,0,0,0.85)]">
-          {/* Brand Logo */}
+        <nav className="nav-shell rounded-2xl px-2.5 sm:px-4.5 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 shadow-[0_14px_32px_rgba(0,0,0,0.85)]">
+          {/* Brand Logo without frame and with prominent title */}
           <div 
             onClick={() => onSelectTab('latest')}
             className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink min-w-0"
           >
-            <div className="size-9 sm:size-10.5 flex-shrink-0 flex items-center justify-center">
+            <div className="size-9.5 sm:size-11 flex-shrink-0 flex items-center justify-center">
               <img
                 src="https://img2.pic.in.th/1000126364.webp"
                 alt="UNIQUE CLUB"
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[16px] sm:text-[18.5px] font-black tracking-tight text-white whitespace-nowrap">
+              <span className="text-[17.5px] sm:text-[20px] font-black tracking-tight text-white whitespace-nowrap">
                 UNIQUE <span className="text-[#29e6b2] hidden min-[340px]:inline">CLUB</span>
               </span>
               <span className="hidden min-[420px]:inline-flex text-[9.5px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#29e6b2]/15 text-[#29e6b2] border border-[#29e6b2]/30 uppercase tracking-wider flex-shrink-0">
@@ -97,17 +97,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          {/* Right Controls: Sound FX + Language Selector (TH/EN) + Admin Portal */}
+          {/* Right Controls: Speaker Sound FX + Language Selector (TH/EN) + Admin Portal */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* Quick Sound Toggle */}
+            {/* Speaker Sound FX Button (ลำโพงกดแล้วมีเสียง) */}
             <button
+              type="button"
               onClick={onToggleSound}
-              className={`flex size-9 sm:size-10 items-center justify-center rounded-xl border transition-all cursor-pointer flex-shrink-0 ${
+              className={`flex size-9 sm:size-10 items-center justify-center rounded-xl border transition-all cursor-pointer select-none active:scale-95 flex-shrink-0 ${
                 soundEnabled
                   ? 'border-[#29e6b2]/40 bg-[#29e6b2]/10 text-[#29e6b2] shadow-[0_0_10px_rgba(41,230,178,0.25)]'
-                  : 'border-white/10 bg-white/[0.04] text-white/50 hover:text-white'
+                  : 'border-white/10 bg-white/[0.04] text-white/40 hover:text-white'
               }`}
-              title={soundEnabled ? (lang === 'en' ? 'Mute Sound FX' : 'ปิดเสียงเอฟเฟกต์') : (lang === 'en' ? 'Unmute Sound FX' : 'เปิดเสียงเอฟเฟกต์')}
+              title={
+                soundEnabled
+                  ? (lang === 'th' ? 'ลำโพงเสียงเอฟเฟกต์: เปิด (กดเพื่อปิด)' : 'Sound FX: On (Click to mute)')
+                  : (lang === 'th' ? 'ลำโพงเสียงเอฟเฟกต์: ปิด (กดเพื่อเปิด)' : 'Sound FX: Off (Click to unmute)')
+              }
+              aria-label="Toggle speaker sound effects"
             >
               {soundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </button>

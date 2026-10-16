@@ -13,7 +13,6 @@ import { fetchServerCodes } from './services/codeApiService';
 import { AdminPortal } from './components/AdminPortal';
 import { isCodeLatest } from './utils/dateFormatter';
 import { Language, translations } from './utils/translations';
-import { MusicPlayer } from './components/MusicPlayer';
 
 // Storage key specifically for user-managed custom codes
 const STORAGE_KEY_USER_CODES = 'opm_user_managed_codes_v1';
@@ -224,6 +223,16 @@ export default function App() {
     return localStorage.getItem('opm_sound_enabled') !== 'false';
   });
 
+  const handleToggleSound = () => {
+    setSoundEnabled((prev) => {
+      const next = !prev;
+      if (next) {
+        playRewardChime();
+      }
+      return next;
+    });
+  };
+
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'EXPIRED'>('ACTIVE');
@@ -329,7 +338,7 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled((v) => !v)}
+        onToggleSound={handleToggleSound}
         lang={lang}
         onSelectLang={handleSelectLang}
         activeCount={latestCodesCount}
@@ -691,9 +700,6 @@ export default function App() {
           })}
         </div>
       </nav>
-
-      {/* Floating Background Music Player via YouTube (Genos Theme) */}
-      <MusicPlayer lang={lang} />
 
       {/* Batch Copy Modal for players */}
       <BatchCopyModal
