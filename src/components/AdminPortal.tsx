@@ -246,11 +246,15 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
           </div>
 
           <div className="text-center mb-6">
-            <div className="size-14 rounded-2xl bg-gradient-to-br from-[#29e6b2] to-[#149974] mx-auto flex items-center justify-center shadow-[0_0_24px_rgba(41,230,178,0.35)] mb-3">
-              <ShieldCheck className="size-7 text-black stroke-[2.2]" />
+            <div className="size-16 mx-auto mb-3 flex items-center justify-center">
+              <img
+                src="https://img2.pic.in.th/1000126364.webp"
+                alt="UNIQUE CLUB"
+                className="w-full h-full object-contain"
+              />
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              ONE PUNCH <span className="text-[#29e6b2]">ADMIN</span>
+              UNIQUE <span className="text-[#29e6b2]">ADMIN</span>
             </h1>
             <p className="text-xs text-white/50 mt-1">
               แผงควบคุมหลังบ้านสำหรับเพิ่มและแก้ไขโค้ดเกม
@@ -327,13 +331,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onNavigateHome }) => {
             </button>
 
             <div className="flex items-center gap-2">
-              <div className="size-8 rounded-lg bg-gradient-to-br from-[#29e6b2] to-[#149974] flex items-center justify-center font-black text-black text-xs shadow-[0_0_12px_rgba(41,230,178,0.3)]">
-                ADM
+              <div className="size-8.5 flex-shrink-0 flex items-center justify-center">
+                <img
+                  src="https://img2.pic.in.th/1000126364.webp"
+                  alt="UNIQUE CLUB"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-black text-white">
-                    ONE PUNCH <span className="text-[#29e6b2]">ADMIN HUB</span>
+                    UNIQUE <span className="text-[#29e6b2]">ADMIN CLUB</span>
                   </span>
                   <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                     ONLINE

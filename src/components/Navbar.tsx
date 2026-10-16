@@ -43,12 +43,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onSelectTab('latest')}
             className="flex items-center gap-2 sm:gap-2.5 cursor-pointer flex-shrink min-w-0"
           >
-            <div className="size-9 sm:size-10 rounded-xl bg-gradient-to-br from-[#29e6b2] to-[#149974] flex items-center justify-center font-black text-black text-xs sm:text-sm shadow-[0_0_14px_rgba(41,230,178,0.4)] flex-shrink-0 tracking-tight">
-              OPM
+            <div className="size-9 sm:size-10.5 flex-shrink-0 flex items-center justify-center">
+              <img
+                src="https://img2.pic.in.th/1000126364.webp"
+                alt="UNIQUE CLUB"
+                className="w-full h-full object-contain"
+                loading="eager"
+              />
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-[14px] sm:text-base font-black tracking-tight text-white whitespace-nowrap">
-                ONE PUNCH <span className="text-[#29e6b2] hidden min-[350px]:inline">HUB</span>
+              <span className="text-[16px] sm:text-[18.5px] font-black tracking-tight text-white whitespace-nowrap">
+                UNIQUE <span className="text-[#29e6b2] hidden min-[340px]:inline">CLUB</span>
               </span>
               <span className="hidden min-[420px]:inline-flex text-[9.5px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#29e6b2]/15 text-[#29e6b2] border border-[#29e6b2]/30 uppercase tracking-wider flex-shrink-0">
                 SEA

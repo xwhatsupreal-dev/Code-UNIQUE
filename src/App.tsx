@@ -13,6 +13,7 @@ import { fetchServerCodes } from './services/codeApiService';
 import { AdminPortal } from './components/AdminPortal';
 import { isCodeLatest } from './utils/dateFormatter';
 import { Language, translations } from './utils/translations';
+import { MusicPlayer } from './components/MusicPlayer';
 
 // Storage key specifically for user-managed custom codes
 const STORAGE_KEY_USER_CODES = 'opm_user_managed_codes_v1';
@@ -690,6 +691,9 @@ export default function App() {
           })}
         </div>
       </nav>
+
+      {/* Floating Background Music Player via YouTube (Genos Theme) */}
+      <MusicPlayer lang={lang} />
 
       {/* Batch Copy Modal for players */}
       <BatchCopyModal
